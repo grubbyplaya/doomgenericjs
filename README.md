@@ -1,67 +1,34 @@
-# doomgeneric
-The purpose of doomgeneric is to make porting Doom easier.
-Of course Doom is already portable but with doomgeneric it is possible with just a few functions.
+﻿# doomgeneric.js
+This is doomgeneric compiled to JavaScript using Emscripten, with bindings added to allow for sound and music support.
 
-To try it you will need a WAD file (game data). If you don't own the game, shareware version is freely available (doom1.wad).
+# Porting
+## Generic
+Implement these functions to get Doom running:
+* DGJS_DrawFrame(framePtr, width, height): Draws a Doom frame. framePtr is a pointer to the framebuffer, which you will need to fetch from Module memory.
+* DGJS_SetTitle(title, titleLen): Optional, allows you to get the IWAD name as a string. title is a pointer, which you will need to fetch from module memory.
+* DGJS_GetKey(): Returns a two-element array, containing a key code at index 0 and its pressed state at index 1.
 
-# porting
-Create a file named doomgeneric_yourplatform.c and just implement these functions to suit your platform.
-* DG_Init
-* DG_DrawFrame
-* DG_SleepMs
-* DG_GetTicksMs
-* DG_GetKey
+## Audio
+These functions have to be implemented to add sound and music support. Leaving them as stubs is fine for the most part. Functions with a return value are **bolded.**
 
-|Functions            |Description|
-|---------------------|-----------|
-|DG_Init              |Initialize your platfrom (create window, framebuffer, etc...).
-|DG_DrawFrame         |Frame is ready in DG_ScreenBuffer. Copy it to your platform's screen.
-|DG_SleepMs           |Sleep in milliseconds.
-|DG_GetTicksMs        |The ticks passed since launch in milliseconds.
-|DG_GetKey            |Provide keyboard events.
-|DG_SetWindowTitle    |Not required. This is for setting the window title as Doom sets this from WAD file.
+### Music
+The global variable DGJS_MusicType is used to pass either a .mus file (false) or a .midi file (true).
+* **DGJS_InitMusic()**: Initializes the music driver. Returns true by default and false if an error occured.
+* **DGJS_RegisterSong(song, len)**: Passes a song to the music driver. It should return an identifier that is used to play the song.
+* DGJS_UnRegisterSong(songId): Dereferences a song from the music driver. It uses the identifier returned by DGJS_RegisterSong.
+* DGJS_PlaySong(songId, looping): Plays the song referenced by songId. If looping is true, the song should loop.
+* DGJS_StopSong(): Stops the current song.
+* DGJS_PauseSong(): Pauses the current song.
+* DGJS_ResumeSong(): Resumes the current song.
+* DGJS_SetMusicVolume(volume): Sets the song volume.
+* DGJS_PollMusic(): Updates the song driver at a fixed interval.
 
-### main loop
-At start, call doomgeneric_Create().
-
-In a loop, call doomgeneric_Tick().
-
-In simplest form:
-```
-int main(int argc, char **argv)
-{
-    doomgeneric_Create(argc, argv);
-
-    while (1)
-    {
-        doomgeneric_Tick();
-    }
-    
-    return 0;
-}
-```
-
-# sound
-Sound is much harder to implement! If you need sound, take a look at SDL port. It fully supports sound and music! Where to start? Define FEATURE_SOUND, assign DG_sound_module and DG_music_module.
-
-# platforms
-Ported platforms include Windows, X11, SDL, emscripten. Just look at (doomgeneric_win.c, doomgeneric_xlib.c, doomgeneric_sdl.c).
-Makefiles provided for each platform.
-
-## emscripten
-You can try it directly here:
-https://ozkl.github.io/doomgeneric/
-
-emscripten port is based on SDL port, so it supports sound and music! For music, timidity backend is used.
-
-## Windows
-![Windows](screenshots/windows.png)
-
-## X11 - Ubuntu
-![Ubuntu](screenshots/ubuntu.png)
-
-## X11 - FreeBSD
-![FreeBSD](screenshots/freebsd.png)
-
-## SDL
-![SDL](screenshots/sdl.png)
+### Sound effects
+* DGJS_InitSound(): Initializes the sound driver.
+* DGJS_ShutdownSound(): Shuts down the sound driver.
+* DGJS_UpdateSound(): Updates the sound driver at a fixed interval.
+* DGJS_UpdateSoundParams(channel, volume, pan): Sets the given sound channel's volume and panning.
+* **DGJS_StartSound(sfxlumpnum, channel, volume, pan)**: Plays the sound effect specified by sfxlumpnum on a given channel, setting the channel's volume and panning. Should return channel by default, and -1 if an error occurs.
+* DGJS_StopSound(channel): Stops the given sound channel.
+* **DGJS_SoundIsPlaying(channel)**: Returns true if the given sound channel is playing, and false otherwise.
+* DGJS_CacheSFX_PCM/Buzzer(data, size, sfxlumpnum): Caches the sound data, which is size bytes large, using sfxlumpnum as an identifier. data is passed as a pointer, so you will need to fetch the sound data from Module memory yourself.

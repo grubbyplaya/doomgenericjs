@@ -1,0 +1,2 @@
+This example is a fork of the basic example that uses the <audio> HTML element rather than WebAudio to play back Doom sound effects, converting them to .wav blobs to do so.
+
