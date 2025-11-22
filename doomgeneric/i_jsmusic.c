@@ -81,7 +81,7 @@ static void *JS_RegisterSong(void *data, int len) {
 
     // pass song data to JS. It's up to the JS code to store the song data.
     *handleID = EM_ASM_INT({
-        DGJS_RegisterSong($0, $1);
+        return DGJS_RegisterSong($0, $1);
     }, bufData, len);
 
     // free converted MIDI data if allocated
@@ -109,7 +109,7 @@ static void JS_PlaySong(void *handle, boolean looping) {
     music_is_playing = true;
     EM_ASM({
         DGJS_PlaySong($0, $1);
-    }, handle, looping);   
+    }, *(int*)handle, looping);   
 }
 
 static void JS_ShutdownMusic() {

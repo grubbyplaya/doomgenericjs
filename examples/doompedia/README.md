@@ -71,22 +71,46 @@ function DGJS_GetKey() {
 	return key ? key : [0, 0];
 }
 
-// audio stuff
+// MIDi stuff
 var DGJS_MusicType = true;
+var songs = [];
+var doomPlayer;
+
 function DGJS_InitMusic() {
-	return true;
+    return true;
 }
 
 function DGJS_RegisterSong(song, len) {
-	// for now, music is not supported.
-	return song;
+    const songData = Module.HEAPU8.subarray(song, song + len);
+    songs[song] = songData;
+    return song;
 }
 
-function DGJS_UnRegisterSong(songId) {}
-function DGJS_PlaySong(songId, looping) {}
-function DGJS_StopSong() {}
-function DGJS_PauseSong() {}
-function DGJS_ResumeSong() {}
+function DGJS_UnRegisterSong(songId) {
+    songs.splice(songId);
+}
+
+function DGJS_PlaySong(songId, looping) {
+    doomPlayer = new MIDIPlayer();
+    doomPlayer.onload = function(song) {
+        doomPlayer.play();
+    }
+    doomPlayer.openFile(songs[songId]);
+    doomPlayer.autoReplay = looping;
+}
+
+function DGJS_StopSong() {
+    doomPlayer.stop();
+}
+
+function DGJS_PauseSong() {
+    doomPlayer.pause();
+}
+
+function DGJS_ResumeSong() {
+    doomPlayer.play();
+}
+
 function DGJS_SetMusicVolume(volume) {}
 function DGJS_PollMusic() {}
 
@@ -155,5 +179,7 @@ function DGJS_CacheSFX_PCM(dataPtr, len, sfxlumpnum) {
 function DGJS_CacheSFX_Buzzer(dataPtr, size, sfxlumpnum) {}
 
 importScriptURI('https://grubbyplaya.github.io/doomgenericjs/examples/basic/doomgeneric.js');
-
+importScriptURI('https://fraigo.github.io/javascript-midi-player/midiplayer/WebAudioFontPlayer.js');
+importScriptURI('https://fraigo.github.io/javascript-midi-player/midiplayer/MIDIFile.js');
+importScriptURI('https://fraigo.github.io/javascript-midi-player/midiplayer/MIDIPlayer.js');
 ```
