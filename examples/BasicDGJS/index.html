@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DGJS Example</title>
+</head>
+<body>
+  <input type="file" id="wadSelector" accept=".wad" onchange="openWad(event)"/>
+  <canvas id="doomCanvas" width="320" height="200"></canvas>
+	<script src="https://miko.art/labs/midi-js/js/midi/player.js" type="text/javascript"></script>
+  <script type='text/javascript' src='doomgeneric.js'></script>
+  <script>
+    var keyQueue = [];
+    const canvasScreen = new ImageData(320, 200);
+    const canvasCtx = document.getElementById("doomCanvas").getContext('2d');
+    const DGJS_MusicType = true;
+    
+    function openWad(event) {
+        const file = event.target.files[0];
+        if (file && file.size) {
+            console.log(file.name);
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('wadSelector').remove();
+                const uint8File = new Uint8Array(event.target.result);
+                let stream = FS.open("/" + (file.name).toLowerCase(), "w+");
+                FS.write(stream, uint8File, 0, file.size, 0);
+                FS.close(stream);
+                Module.ccall(
+                    'doomgeneric_Create',
+                    'void',
+                    ['number', 'number'],
+                    [0, 0]
+                );
+                wadLoaded=true;
+                doomInterval = setInterval(_doomgeneric_Tick, 0);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    }
+
+    function DGJS_DrawFrame(framePtr, frameWidth, frameHeight) {
+        let framebuffer = Module.HEAPU8.subarray(framePtr, framePtr + frameWidth*frameHeight*4);
+        for (let i = 0; i < frameWidth*frameHeight*4; i += 4) {
+            canvasScreen.data[i] = framebuffer[i + 2];
+            canvasScreen.data[i + 1] = framebuffer[i + 1];
+            canvasScreen.data[i + 2] = framebuffer[i];
+            canvasScreen.data[i + 3] = 255;
+        }
+        canvasCtx.putImageData(canvasScreen, 0, 0);
+    }
+
+    function DGJS_SetTitle(titlePtr, titleLen) {
+        let titleChar = Module.HEAPU8.subarray(titlePtr, titlePtr + titleLen);
+        document.title = String.fromCharCode(...titleChar);
+    }
+
+    function DGJS_GetKey() {
+        var keys = keyQueue.pop();
+        if (keys)
+            return keys;
+
+        return [0, 0];
+    }
+
+    // MIDi stuff
+    var songs = [];
+
+    function DGJS_InitMusic() {
+        return true;
+    }
+
+    function DGJS_RegisterSong(song, len) {
+        const songData = Module.HEAPU8.subarray(song, song + len);
+        const songBlob = new Blob([songData], {type: 'application/octet-stream'});
+        songs[song] = URL.createObjectURL(songBlob);
+        return song;
+    }
+
+    function DGJS_UnRegisterSong(songId) {
+        songs.splice(songId);
+    }
+
+    function DGJS_PlaySong(songId, looping) {
+    }
+
+    function DGJS_StopSong() {}
+    function DGJS_PauseSong() {}
+    function DGJS_ResumeSong() {}
+    function DGJS_SetMusicVolume(volume) {}
+    function DGJS_PollMusic() {}
+
+    // PCM stuff
+    const audioCtx = new window.AudioContext();
+    var sounds = [];
+    var channels = new Array(16);
+
+    function DGJS_InitSound() {
+        for (let i = 0; i < 16; i++) {
+            channels[i] = {buffer: null, volume: null, pan: null, playing: false};
+        }
+        return true;
+    }
+
+    function DGJS_ShutdownSound() {}
+    function DGJS_UpdateSound() {}
+
+    function DGJS_UpdateSoundParams(channel, volume, pan) {
+        channels[channel].volume.value = volume / 127;
+        channels[channel].pan.value = (pan - 128) / 127;
+    }
+
+    function DGJS_StartSound(sfxlumpnum, channel, volume, pan) {
+        var source = audioCtx.createBufferSource();
+        var gainNode = audioCtx.createGain();
+        var panning = audioCtx.createStereoPanner();
+
+        source.buffer = sounds[sfxlumpnum];
+        gainNode.gain.value = volume / 127;
+        panning.pan.value = (pan - 128) / 127;
+
+        source.connect(panning);
+        panning.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        channels[channel].buffer = source;
+        channels[channel].volume = gainNode.gain;
+        channels[channel].pan = panning.pan;
+        channels[channel].playing = true;
+
+        source.start();
+        source.onended = () => {
+            channels[channel].playing = false;
+        };
+        return channel;
+    }
+
+    function DGJS_StopSound(channel) {
+        channels[channel].buffer.stop();
+    }
+
+    function DGJS_SoundIsPlaying(channel) {
+        if (channels[channel])
+            return channels[channel].playing;
+
+        return false;
+    }
+
+    function DGJS_CacheSFX_PCM(dataPtr, len, sfxlumpnum) {
+        const rawSound = Module.HEAPU8.subarray(dataPtr, dataPtr + len);
+        const sampleRate = rawSound[3]<<8 | rawSound[2];
+
+        const soundBuffer = audioCtx.createBuffer(1, rawSound.length - 8, sampleRate);
+        const floatSound = soundBuffer.getChannelData(0);
+        for (var i = 0x08; i < rawSound.length; i++) {
+            floatSound[i - 8] = (rawSound[i] - 0x80) / 127;
+        }
+
+        sounds[sfxlumpnum] = soundBuffer;
+    }
+
+    function DGJS_CacheSFX_Buzzer(dataPtr, size, sfxlumpnum) {}
+    
+    document.addEventListener('keydown', (event) => {
+        keyQueue.push([_toDoomKey(event.keyCode), 1]);
+    });
+
+    document.addEventListener('keyup', (event) => {
+        keyQueue.push([_toDoomKey(event.keyCode), 0]);
+    });
+  </script>
+</body>
+</html>
