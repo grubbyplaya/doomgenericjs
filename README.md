@@ -36,6 +36,7 @@ The global variable DGJS_MusicType is used to pass either a .mus file (false) or
 # Examples
 
 ## Basic (WebAudio PCM backend, full MIDI support)
+![](https://github.com/grubbyplaya/doomgenericjs/blob/main/examples/basic/screenshot.png?raw=true)
 [Link](https://grubbyplaya.github.io/doomgenericjs/examples/basic/)
 
 ## AudioTag (HTML Audio PCM backend)
