@@ -31,4 +31,17 @@ The global variable DGJS_MusicType is used to pass either a .mus file (false) or
 * **DGJS_StartSound(sfxlumpnum, channel, volume, pan)**: Plays the sound effect specified by sfxlumpnum on a given channel, setting the channel's volume and panning. Should return channel by default, and -1 if an error occurs.
 * DGJS_StopSound(channel): Stops the given sound channel.
 * **DGJS_SoundIsPlaying(channel)**: Returns true if the given sound channel is playing, and false otherwise.
-* DGJS_CacheSFX_PCM/Buzzer(data, size, sfxlumpnum): Caches the sound data, which is size bytes large, using sfxlumpnum as an identifier. data is passed as a pointer, so you will need to fetch the sound data from Module memory yourself.
+* DGJS_CacheSFX_PCM/Buzzer(data, size, soundId): Caches the sound data, which is size bytes large, using soundId as an identifier. data is passed as a pointer, so you will need to fetch the sound data from Module memory yourself.
+
+# Examples
+
+## Basic (WebAudio PCM backend, full MIDI support)
+[Link](https://grubbyplaya.github.io/doomgenericjs/examples/basic/)
+
+## AudioTag (HTML Audio PCM backend)
+![](https://github.com/grubbyplaya/doomgenericjs/blob/main/examples/htmlaudio/screenshot.png?raw=true)
+[Link](https://grubbyplaya.github.io/doomgenericjs/examples/htmlaudio/)
+
+## Doompedia (Wikipedia user script, based on Basic)
+![](https://github.com/grubbyplaya/doomgenericjs/blob/main/examples/doompedia/screenshot.png?raw=true)
+[Link](https://en.wikipedia.org/wiki/User:Grubbyeditor/doompedia.js)

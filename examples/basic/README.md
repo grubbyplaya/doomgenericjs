@@ -1,2 +1,1 @@
-This example uses <canvas> and the WebAudio API to create a barebones DGJS implementation.
-
+This example uses a HTML5 canvas and the WebAudio API to create a minimal DGJS implementation.

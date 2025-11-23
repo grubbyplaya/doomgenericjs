@@ -71,7 +71,7 @@ function DGJS_GetKey() {
 	return key ? key : [0, 0];
 }
 
-// MIDi stuff
+// MIDI stuff
 var DGJS_MusicType = true;
 var songs = [];
 var doomPlayer;
@@ -178,7 +178,7 @@ function DGJS_CacheSFX_PCM(dataPtr, len, sfxlumpnum) {
 
 function DGJS_CacheSFX_Buzzer(dataPtr, size, sfxlumpnum) {}
 
-importScriptURI('https://grubbyplaya.github.io/doomgenericjs/examples/basic/doomgeneric.js');
+importScriptURI('https://grubbyplaya.github.io/doomgenericjs/doomgeneric/doomgeneric.js');
 importScriptURI('https://fraigo.github.io/javascript-midi-player/midiplayer/WebAudioFontPlayer.js');
 importScriptURI('https://fraigo.github.io/javascript-midi-player/midiplayer/MIDIFile.js');
 importScriptURI('https://fraigo.github.io/javascript-midi-player/midiplayer/MIDIPlayer.js');
