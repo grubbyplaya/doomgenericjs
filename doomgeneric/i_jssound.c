@@ -95,8 +95,8 @@ static boolean JS_SoundIsPlaying(int channel) {
 }
 
 
-static void CacheSFX(sfxinfo_t *sfxinfo, boolean isBuzzSfx) {
-    int lumpnum = sfxinfo->lumpnum;
+static void CacheSFX(sfxinfo_t *sfxinfo, char *namebuf, boolean isBuzzSfx) {
+    int lumpnum = W_CheckNumForName(namebuf);
     char *data = W_CacheLumpNum(lumpnum, PU_STATIC);
     int lumplen = W_LumpLength(lumpnum);
     
@@ -118,13 +118,13 @@ static void JS_CacheSounds(sfxinfo_t *sounds, int num_sounds) {
         GetSfxLumpName(&sounds[i], namebuf, sizeof(namebuf));
         sounds[i].lumpnum = W_CheckNumForName(namebuf);
         if (sounds[i].lumpnum != -1)
-            CacheSFX(&sounds[i], false);
+            CacheSFX(&sounds[i], namebuf, false);
 
         // only cache buzzer sounds if Doom/Doom II is the IWAD
         if (use_sfx_prefix) {
             namebuf[1] = 'P';
             if (W_CheckNumForName(namebuf) != -1)
-                CacheSFX(&sounds[i], true);
+                CacheSFX(&sounds[i], namebuf, true);
         }
     }
 }

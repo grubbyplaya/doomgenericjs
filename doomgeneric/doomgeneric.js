@@ -76842,8 +76842,8 @@ function _JS_SoundIsPlaying($channel) {
 function _JS_CacheSounds($sounds,$num_sounds) {
  $sounds = $sounds|0;
  $num_sounds = $num_sounds|0;
- var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $arrayidx = 0, $arrayidx13 = 0, $arrayidx2 = 0, $arrayidx3 = 0, $arrayidx6 = 0;
- var $arrayidx8 = 0, $call = 0, $call10 = 0, $cmp = 0, $cmp11 = 0, $cmp5 = 0, $i = 0, $inc = 0, $lumpnum = 0, $lumpnum4 = 0, $namebuf = 0, $num_sounds$addr = 0, $sounds$addr = 0, $tobool = 0, label = 0, sp = 0;
+ var $0 = 0, $1 = 0, $10 = 0, $11 = 0, $12 = 0, $13 = 0, $14 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $8 = 0, $9 = 0, $arrayidx = 0, $arrayidx14 = 0, $arrayidx2 = 0, $arrayidx3 = 0, $arrayidx6 = 0;
+ var $arrayidx9 = 0, $call = 0, $call11 = 0, $cmp = 0, $cmp12 = 0, $cmp5 = 0, $i = 0, $inc = 0, $lumpnum = 0, $lumpnum4 = 0, $namebuf = 0, $num_sounds$addr = 0, $sounds$addr = 0, $tobool = 0, label = 0, sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abortStackOverflow(32|0);
  $namebuf = sp + 12|0;
@@ -76877,20 +76877,20 @@ function _JS_CacheSounds($sounds,$num_sounds) {
    $9 = $sounds$addr;
    $10 = $i;
    $arrayidx6 = (($9) + (($10*48)|0)|0);
-   _CacheSFX($arrayidx6,0);
+   _CacheSFX($arrayidx6,$namebuf,0);
   }
   $11 = HEAP32[100499]|0;
   $tobool = ($11|0)!=(0);
   if ($tobool) {
-   $arrayidx8 = ((($namebuf)) + 1|0);
-   HEAP8[$arrayidx8>>0] = 80;
-   $call10 = (_W_CheckNumForName($namebuf)|0);
-   $cmp11 = ($call10|0)!=(-1);
-   if ($cmp11) {
+   $arrayidx9 = ((($namebuf)) + 1|0);
+   HEAP8[$arrayidx9>>0] = 80;
+   $call11 = (_W_CheckNumForName($namebuf)|0);
+   $cmp12 = ($call11|0)!=(-1);
+   if ($cmp12) {
     $12 = $sounds$addr;
     $13 = $i;
-    $arrayidx13 = (($12) + (($13*48)|0)|0);
-    _CacheSFX($arrayidx13,1);
+    $arrayidx14 = (($12) + (($13*48)|0)|0);
+    _CacheSFX($arrayidx14,$namebuf,1);
    }
   }
   $14 = $i;
@@ -76939,35 +76939,36 @@ function _GetSfxLumpName($sfx,$buf,$buf_len) {
   STACKTOP = sp;return;
  }
 }
-function _CacheSFX($sfxinfo,$isBuzzSfx) {
+function _CacheSFX($sfxinfo,$namebuf,$isBuzzSfx) {
  $sfxinfo = $sfxinfo|0;
+ $namebuf = $namebuf|0;
  $isBuzzSfx = $isBuzzSfx|0;
- var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $7 = 0, $call = 0, $call2 = 0, $call3 = 0, $call4 = 0, $data = 0, $isBuzzSfx$addr = 0, $lumplen = 0, $lumpnum = 0, $lumpnum1 = 0, $sfxinfo$addr = 0, $tobool = 0, label = 0;
+ var $0 = 0, $1 = 0, $2 = 0, $3 = 0, $4 = 0, $5 = 0, $6 = 0, $call = 0, $call1 = 0, $call2 = 0, $call3 = 0, $call4 = 0, $data = 0, $isBuzzSfx$addr = 0, $lumplen = 0, $lumpnum = 0, $namebuf$addr = 0, $sfxinfo$addr = 0, $tobool = 0, label = 0;
  var sp = 0;
  sp = STACKTOP;
  STACKTOP = STACKTOP + 32|0; if ((STACKTOP|0) >= (STACK_MAX|0)) abortStackOverflow(32|0);
  $sfxinfo$addr = $sfxinfo;
+ $namebuf$addr = $namebuf;
  $isBuzzSfx$addr = $isBuzzSfx;
- $0 = $sfxinfo$addr;
- $lumpnum1 = ((($0)) + 36|0);
- $1 = HEAP32[$lumpnum1>>2]|0;
- $lumpnum = $1;
+ $0 = $namebuf$addr;
+ $call = (_W_CheckNumForName($0)|0);
+ $lumpnum = $call;
+ $1 = $lumpnum;
+ $call1 = (_W_CacheLumpNum($1,1)|0);
+ $data = $call1;
  $2 = $lumpnum;
- $call = (_W_CacheLumpNum($2,1)|0);
- $data = $call;
- $3 = $lumpnum;
- $call2 = (_W_LumpLength($3)|0);
+ $call2 = (_W_LumpLength($2)|0);
  $lumplen = $call2;
- $4 = $isBuzzSfx$addr;
- $tobool = ($4|0)!=(0);
- $5 = $data;
- $6 = $lumplen;
- $7 = $lumpnum;
+ $3 = $isBuzzSfx$addr;
+ $tobool = ($3|0)!=(0);
+ $4 = $data;
+ $5 = $lumplen;
+ $6 = $lumpnum;
  if ($tobool) {
-  $call4 = _emscripten_asm_const_iiii(9,($5|0),($6|0),($7|0))|0;
+  $call4 = _emscripten_asm_const_iiii(9,($4|0),($5|0),($6|0))|0;
   STACKTOP = sp;return;
  } else {
-  $call3 = _emscripten_asm_const_iiii(8,($5|0),($6|0),($7|0))|0;
+  $call3 = _emscripten_asm_const_iiii(8,($4|0),($5|0),($6|0))|0;
   STACKTOP = sp;return;
  }
 }
