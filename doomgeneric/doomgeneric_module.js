@@ -162,7 +162,13 @@ var quit_ = function(status, toThrow) {
 var ENVIRONMENT_IS_WEB = false;
 var ENVIRONMENT_IS_WORKER = false;
 var ENVIRONMENT_IS_NODE = false;
-var ENVIRONMENT_IS_SHELL = true;
+var ENVIRONMENT_IS_SHELL = false;
+ENVIRONMENT_IS_WEB = typeof window === 'object';
+ENVIRONMENT_IS_WORKER = typeof importScripts === 'function';
+// N.b. Electron.js environment is simultaneously a NODE-environment, but
+// also a web environment.
+ENVIRONMENT_IS_NODE = typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
+ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
 
 if (Module['ENVIRONMENT']) {
   throw new Error('Module.ENVIRONMENT has been deprecated. To force the environment, use the ENVIRONMENT compile-time option (for example, -s ENVIRONMENT=web or -s ENVIRONMENT=node)');
@@ -185,9 +191,70 @@ var read_,
     readBinary,
     setWindowTitle;
 
+var nodeFS;
+var nodePath;
+
+if (ENVIRONMENT_IS_NODE) {
+  if (ENVIRONMENT_IS_WORKER) {
+    scriptDirectory = require('path').dirname(scriptDirectory) + '/';
+  } else {
+    scriptDirectory = __dirname + '/';
+  }
+
+
+
+
+  read_ = function shell_read(filename, binary) {
+    var ret = tryParseAsDataURI(filename);
+    if (ret) {
+      return binary ? ret : ret.toString();
+    }
+    if (!nodeFS) nodeFS = require('fs');
+    if (!nodePath) nodePath = require('path');
+    filename = nodePath['normalize'](filename);
+    return nodeFS['readFileSync'](filename, binary ? null : 'utf8');
+  };
+
+  readBinary = function readBinary(filename) {
+    var ret = read_(filename, true);
+    if (!ret.buffer) {
+      ret = new Uint8Array(ret);
+    }
+    assert(ret.buffer);
+    return ret;
+  };
+
+
+
+
+  if (process['argv'].length > 1) {
+    thisProgram = process['argv'][1].replace(/\\/g, '/');
+  }
+
+  arguments_ = process['argv'].slice(2);
+
+  // MODULARIZE will export the module in the proper place outside, we don't need to export here
+
+  process['on']('uncaughtException', function(ex) {
+    // suppress ExitStatus exceptions from showing an error
+    if (!(ex instanceof ExitStatus)) {
+      throw ex;
+    }
+  });
+
+  process['on']('unhandledRejection', abort);
+
+  quit_ = function(status) {
+    process['exit'](status);
+  };
+
+  Module['inspect'] = function () { return '[Emscripten Module object]'; };
+
+
+
+} else
 if (ENVIRONMENT_IS_SHELL) {
 
-  if ((typeof process === 'object' && typeof require === 'function') || typeof window === 'object' || typeof importScripts === 'function') throw new Error('not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)');
 
   if (typeof read != 'undefined') {
     read_ = function shell_read(f) {
@@ -238,6 +305,95 @@ if (ENVIRONMENT_IS_SHELL) {
 // Note that this includes Node.js workers when relevant (pthreads is enabled).
 // Node.js workers are detected as a combination of ENVIRONMENT_IS_WORKER and
 // ENVIRONMENT_IS_NODE.
+if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+  if (ENVIRONMENT_IS_WORKER) { // Check worker, not web, since window could be polyfilled
+    scriptDirectory = self.location.href;
+  } else if (document.currentScript) { // web
+    scriptDirectory = document.currentScript.src;
+  }
+  // When MODULARIZE, this JS may be executed later, after document.currentScript
+  // is gone, so we saved it, and we use it here instead of any other info.
+  if (_scriptDir) {
+    scriptDirectory = _scriptDir;
+  }
+  // blob urls look like blob:http://site.com/etc/etc and we cannot infer anything from them.
+  // otherwise, slice off the final part of the url to find the script directory.
+  // if scriptDirectory does not contain a slash, lastIndexOf will return -1,
+  // and scriptDirectory will correctly be replaced with an empty string.
+  if (scriptDirectory.indexOf('blob:') !== 0) {
+    scriptDirectory = scriptDirectory.substr(0, scriptDirectory.lastIndexOf('/')+1);
+  } else {
+    scriptDirectory = '';
+  }
+
+
+  // Differentiate the Web Worker from the Node Worker case, as reading must
+  // be done differently.
+  {
+
+
+
+
+  read_ = function shell_read(url) {
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, false);
+      xhr.send(null);
+      return xhr.responseText;
+    } catch (err) {
+      var data = tryParseAsDataURI(url);
+      if (data) {
+        return intArrayToString(data);
+      }
+      throw err;
+    }
+  };
+
+  if (ENVIRONMENT_IS_WORKER) {
+    readBinary = function readBinary(url) {
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, false);
+        xhr.responseType = 'arraybuffer';
+        xhr.send(null);
+        return new Uint8Array(/** @type{!ArrayBuffer} */(xhr.response));
+      } catch (err) {
+        var data = tryParseAsDataURI(url);
+        if (data) {
+          return data;
+        }
+        throw err;
+      }
+    };
+  }
+
+  readAsync = function readAsync(url, onload, onerror) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function xhr_onload() {
+      if (xhr.status == 200 || (xhr.status == 0 && xhr.response)) { // file URLs can return 0
+        onload(xhr.response);
+        return;
+      }
+      var data = tryParseAsDataURI(url);
+      if (data) {
+        onload(data.buffer);
+        return;
+      }
+      onerror();
+    };
+    xhr.onerror = onerror;
+    xhr.send(null);
+  };
+
+
+
+
+  }
+
+  setWindowTitle = function(title) { document.title = title };
+} else
 {
   throw new Error('environment detection error');
 }
@@ -1976,6 +2132,27 @@ function copyTempDouble(ptr) {
         }},default_tty_ops:{get_char:function(tty) {
           if (!tty.input.length) {
             var result = null;
+            if (ENVIRONMENT_IS_NODE) {
+              // we will read data by chunks of BUFSIZE
+              var BUFSIZE = 256;
+              var buf = Buffer.alloc ? Buffer.alloc(BUFSIZE) : new Buffer(BUFSIZE);
+              var bytesRead = 0;
+  
+              try {
+                bytesRead = nodeFS.readSync(process.stdin.fd, buf, 0, BUFSIZE, null);
+              } catch(e) {
+                // Cross-platform differences: on Windows, reading EOF throws an exception, but on other OSes,
+                // reading EOF returns 0. Uniformize behavior by treating the EOF exception to return 0.
+                if (e.toString().indexOf('EOF') != -1) bytesRead = 0;
+                else throw e;
+              }
+  
+              if (bytesRead > 0) {
+                result = buf.slice(0, bytesRead).toString('utf-8');
+              } else {
+                result = null;
+              }
+            } else
             if (typeof window != 'undefined' &&
               typeof window.prompt == 'function') {
               // Browser.
@@ -3421,6 +3598,16 @@ function copyTempDouble(ptr) {
           var randomBuffer = new Uint8Array(1);
           random_device = function() { crypto.getRandomValues(randomBuffer); return randomBuffer[0]; };
         } else
+        if (ENVIRONMENT_IS_NODE) {
+          // for nodejs with or without crypto support included
+          try {
+            var crypto_module = require('crypto');
+            // nodejs has crypto support
+            random_device = function() { return crypto_module['randomBytes'](1)[0]; };
+          } catch (e) {
+            // nodejs doesn't have crypto support
+          }
+        } else
         {}
         if (!random_device) {
           // we couldn't find a proper implementation, as Math.random() is not suitable for /dev/random, see emscripten-core/emscripten/pull/7096
@@ -4447,6 +4634,40 @@ function copyTempDouble(ptr) {
    
 
   function _system(command) {
+      if (ENVIRONMENT_IS_NODE) {
+        if (!command) return 1; // shell is available
+  
+        var cmdstr = UTF8ToString(command);
+        if (!cmdstr.length) return 0; // this is what glibc seems to do (shell works test?)
+  
+        var cp = require('child_process');
+        var ret = cp.spawnSync(cmdstr, [], {shell:true, stdio:'inherit'});
+  
+        var _W_EXITCODE = function(ret, sig) {
+          return ((ret) << 8 | (sig));
+        }
+  
+        // this really only can happen if process is killed by signal
+        if (ret.status === null) {
+          // sadly node doesn't expose such function
+          var signalToNumber = function(sig) {
+            // implement only the most common ones, and fallback to SIGINT
+            switch (sig) {
+              case 'SIGHUP': return 1;
+              case 'SIGINT': return 2;
+              case 'SIGQUIT': return 3;
+              case 'SIGFPE': return 8;
+              case 'SIGKILL': return 9;
+              case 'SIGALRM': return 14;
+              case 'SIGTERM': return 15;
+            }
+            return 2; // SIGINT
+          }
+          return _W_EXITCODE(0, signalToNumber(ret.signal));
+        }
+  
+        return _W_EXITCODE(ret.status, 0);
+      }
       // int system(const char *command);
       // http://pubs.opengroup.org/onlinepubs/000095399/functions/system.html
       // Can't call external programs.
@@ -4596,6 +4817,17 @@ var decodeBase64 = typeof atob === 'function' ? atob : function (input) {
 // Converts a string of base64 into a byte array.
 // Throws error on invalid input.
 function intArrayFromBase64(s) {
+  if (typeof ENVIRONMENT_IS_NODE === 'boolean' && ENVIRONMENT_IS_NODE) {
+    var buf;
+    try {
+      // TODO: Update Node.js externs, Closure does not recognize the following Buffer.from()
+      /**@suppress{checkTypes}*/
+      buf = Buffer.from(s, 'base64');
+    } catch (_) {
+      buf = new Buffer(s, 'base64');
+    }
+    return new Uint8Array(buf['buffer'], buf['byteOffset'], buf['byteLength']);
+  }
 
   try {
     var decoded = decodeBase64(s);

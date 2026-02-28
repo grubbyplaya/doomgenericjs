@@ -6,7 +6,7 @@ endif
 
 CC=emcc
 CFLAGS+=-sWASM=0 -sMODULARIZE=1 -sEXPORT_ES6=1 -Wno-fastcomp -Wabsolute-value -static '-sEXPORTED_FUNCTIONS=[_main,_doomgeneric_Create,_doomgeneric_Tick,_toDoomKey]' -DFEATURE_SOUND
-LDFLAGS+=-sSINGLE_FILE=1 -sENVIRONMENT=shell -sEXPORTED_RUNTIME_METHODS="[\"ccall\",\"FS\",\"UTF8ToString\"]"
+LDFLAGS+=-sSINGLE_FILE=1 -sEXPORTED_RUNTIME_METHODS="[\"ccall\",\"FS\",\"UTF8ToString\"]"
 LIBS+=-lm -lc
 
 # subdirectory for objects
