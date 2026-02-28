@@ -67,7 +67,7 @@ static void *JS_RegisterSong(void *data, int len) {
     unsigned char *bufData;
     MEMFILE *midfile;
 
-    if (music_type || !isMidi(data, len)) {
+    if (music_type && !isMidi(data, len)) {
         // register MIDI file
         filename = M_TempFile("doom.mid");
         midfile = ConvertMus(data, len, filename);
@@ -85,7 +85,7 @@ static void *JS_RegisterSong(void *data, int len) {
     }, bufData, len);
 
     // free converted MIDI data if allocated
-    if (music_type || !isMidi(data, len))
+    if (music_type && !isMidi(data, len))
         mem_fclose(midfile);
 
     return handleID;

@@ -52,3 +52,7 @@ The global variable DGJS_MusicType is used to pass a pointer to music data in ei
 ## Doompedia (Wikipedia user script, based on Basic)
 ![](https://github.com/grubbyplaya/doomgenericjs/blob/main/examples/doompedia/screenshot.png?raw=true)
 [Link](https://en.wikipedia.org/wiki/User:Grubbyeditor/doompedia.js)
+
+## p5.js (AudioBuffer PCM backend, Oscillator Buzzer backend)
+![](https://github.com/grubbyplaya/doomgenericjs/blob/main/examples/p5js/screenshot.png?raw=true)
+[Link](https://grubbyplaya.github.io/doomgenericjs/examples/p5js/)
